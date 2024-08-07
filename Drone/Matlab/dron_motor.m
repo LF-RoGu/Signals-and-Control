@@ -3,7 +3,7 @@ clear;
 clc;
 
 % Time vector for state-space model
-tspan = [0 100];
+tspan = 0:0.01:50; % Using a finer time span to include multiple points
 % Initial conditions
 initial_conditions = [0, 0];
 % Desired poles
@@ -51,11 +51,8 @@ function dron_cdMotor(tspan, initial_conditions, desired_poles)
     % Convert angular velocity to RPM
     rpms = X(:, 2) * (60 / (2 * pi));
 
-    % Calculate thrust
-    thrust_coeff = 0.014;
-    density = 1e3;  % kg/m^3
-    diameter = 2.0; % m
-    thrust = thrust_coeff * density * (X(:,2).^2) * (diameter^4);
+    % Calculate thrust with realistic values
+    thrust = calculate_thrust(rpms);
 
     % Plot results
     figure;
@@ -99,4 +96,14 @@ end
 function rpm = ref_rpm_function(t)
     % Reference RPM as a sine wave
     rpm = 2000 + 1000 * sin(0.1 * t);  % Example: sinusoidal reference RPM
+end
+
+function thrust = calculate_thrust(rpms)
+    % Thrust calculation with realistic propeller values
+    C_T = 0.1;      % Thrust coefficient
+    rho = 1.225;    % Air density (kg/m³)
+    D = 0.254;      % Propeller diameter (meters, approximately 10 inches)
+
+    % Calculate thrust
+    thrust = C_T * rho * (rpms / 60).^2 * D^4;
 end
