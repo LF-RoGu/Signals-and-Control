@@ -13,13 +13,13 @@ b = 1e-6;   % thrust factor (N/(rad/s)^2)
 
 % PID controller gains
 Kp_pos = 1.0;  % Proportional gain for position
-Kd_pos = 0.5;  % Derivative gain for position
+Kd_pos = 20.5;  % Derivative gain for position
 Kp_yaw = 1.0;  % Proportional gain for yaw
 Kd_yaw = 0.5;  % Derivative gain for yaw
 Kp_pitch = 1.0; % Proportional gain for pitch
-Kd_pitch = 0.5; % Derivative gain for pitch
+Kd_pitch = 1.5; % Derivative gain for pitch
 Kp_roll = 1.0;  % Proportional gain for roll
-Kd_roll = 0.5;  % Derivative gain for roll
+Kd_roll = 1.5;  % Derivative gain for roll
 
 % State variables
 x = 0; y = 0; z = 0; % position (m)
@@ -86,6 +86,18 @@ for t = 1:length(time)
     Omega2 = max(0, Omega2);
     Omega3 = max(0, Omega3);
     Omega4 = max(0, Omega4);
+    
+    % Call the motor function to get the thrust for each motor
+    thrust1 = dron_motor(time(t), Omega1 * (60 / (2 * pi))); % Convert rad/s to RPM
+    thrust2 = dron_motor(time(t), Omega2 * (60 / (2 * pi)));
+    thrust3 = dron_motor(time(t), Omega3 * (60 / (2 * pi)));
+    thrust4 = dron_motor(time(t), Omega4 * (60 / (2 * pi)));
+    
+    % Total thrust and torques
+    Ft = thrust1 + thrust2 + thrust3 + thrust4;
+    tau_x = l * (thrust2 - thrust4);
+    tau_y = l * (thrust3 - thrust1);
+    tau_z = b * (Omega1 - Omega2 + Omega3 - Omega4);
     
     % Equations of motion
     x_dot = u;
