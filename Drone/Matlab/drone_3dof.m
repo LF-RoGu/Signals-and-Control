@@ -6,7 +6,16 @@ Iy = 0.01;  % moment of inertia around y-axis (kg*m^2)
 Iz = 0.02;  % moment of inertia around z-axis (kg*m^2)
 l = 0.1;    % distance from the center to the propeller (m)
 b = 1e-6;   % thrust factor (N/(rad/s)^2)
-d = 1e-7;   % drag factor (N*m/(rad/s)^2)
+
+% PID controller gains
+Kp_pos = 1.0;  % Proportional gain for position
+Kd_pos = 0.5;  % Derivative gain for position
+Kp_yaw = 1.0;  % Proportional gain for yaw
+Kd_yaw = 0.5;  % Derivative gain for yaw
+Kp_pitch = 1.0; % Proportional gain for pitch
+Kd_pitch = 0.5; % Derivative gain for pitch
+Kp_roll = 1.0;  % Proportional gain for roll
+Kd_roll = 0.5;  % Derivative gain for roll
 
 % State variables
 x = 0; y = 0; z = 0; % position (m)
@@ -22,29 +31,66 @@ Omega4 = 1000;
 
 % Time step
 dt = 0.01;
-time = 0:dt:10;
+time = 0:dt:50;
 
 % Initialize arrays for storing results
 x_array = zeros(size(time));
 y_array = zeros(size(time));
+z_array = zeros(size(time));
+phi_array = zeros(size(time));
+theta_array = zeros(size(time));
 psi_array = zeros(size(time));
+
+% Custom path parameters
+% Define the desired sine wave trajectory
+desired_trajectory = @(t) [t, 5 * sin(0.5 * t)]; % sine wave along y-axis
 
 % Simulation loop
 for t = 1:length(time)
+    % Desired position
+    pos_des = desired_trajectory(time(t));
+    x_des = pos_des(1);
+    y_des = pos_des(2);
+    
+    % Compute desired velocities (finite difference approximation)
+    if t == 1
+        u_des = 0;
+        v_des = 0;
+    else
+        u_des = (x_des - x_array(t-1)) / dt;
+        v_des = (y_des - y_array(t-1)) / dt;
+    end
+    
     % Thrust and torques
-    Ft = b * (Omega1^2 + Omega2^2 + Omega3^2 + Omega4^2);
-    tau_x = b * l * (Omega4^2 - Omega2^2);
-    tau_y = b * l * (Omega3^2 - Omega1^2);
-    tau_z = d * (Omega2^2 + Omega4^2 - Omega1^2 - Omega3^2);
+    Ft = m * g; % constant thrust to counteract gravity
+    tau_x = Kp_roll * (0 - phi) + Kd_roll * (0 - p);
+    tau_y = Kp_pitch * (0 - theta) + Kd_pitch * (0 - q);
+    tau_z = Kp_yaw * (0 - psi) + Kd_yaw * (0 - r);
+    
+    % Proportional control to follow the desired path
+    Fx = Kp_pos * (x_des - x) + Kd_pos * (u_des - u);
+    Fy = Kp_pos * (y_des - y) + Kd_pos * (v_des - v);
+    
+    % Update motor speeds based on control inputs
+    Omega1 = sqrt((Ft / (4 * b)) - (Fx / (2 * b * l)) - (Fy / (2 * b * l)) - (tau_z / (4 * d)));
+    Omega2 = sqrt((Ft / (4 * b)) - (Fx / (2 * b * l)) + (Fy / (2 * b * l)) + (tau_z / (4 * d)));
+    Omega3 = sqrt((Ft / (4 * b)) + (Fx / (2 * b * l)) + (Fy / (2 * b * l)) - (tau_z / (4 * d)));
+    Omega4 = sqrt((Ft / (4 * b)) + (Fx / (2 * b * l)) - (Fy / (2 * b * l)) + (tau_z / (4 * d)));
+    
+    % Ensure motor speeds are non-negative
+    Omega1 = max(0, Omega1);
+    Omega2 = max(0, Omega2);
+    Omega3 = max(0, Omega3);
+    Omega4 = max(0, Omega4);
     
     % Equations of motion
     x_dot = u;
     y_dot = v;
     z_dot = w;
     
-    u_dot = r*v - q*w - g*theta;
-    v_dot = p*w - r*u + g*phi;
-    w_dot = q*u - p*v + Ft/m;
+    u_dot = r * v - q * w - g * theta + Fx / m;
+    v_dot = p * w - r * u + g * phi + Fy / m;
+    w_dot = q * u - p * v + Ft / m;
     
     p_dot = (Iy - Iz) * q * r / Ix + tau_x / Ix;
     q_dot = (Iz - Ix) * p * r / Iy + tau_y / Iy;
@@ -73,6 +119,9 @@ for t = 1:length(time)
     % Store results
     x_array(t) = x;
     y_array(t) = y;
+    z_array(t) = z;
+    phi_array(t) = phi;
+    theta_array(t) = theta;
     psi_array(t) = psi;
 end
 
@@ -91,7 +140,32 @@ ylabel('Y Position (m)');
 title('Drone Y Position');
 
 subplot(3,1,3);
+plot(time, z_array);
+xlabel('Time (s)');
+ylabel('Z Position (m)');
+title('Drone Z Position');
+
+figure;
+subplot(3,1,1);
+plot(time, phi_array);
+xlabel('Time (s)');
+ylabel('Roll (rad)');
+title('Drone Roll Angle');
+
+subplot(3,1,2);
+plot(time, theta_array);
+xlabel('Time (s)');
+ylabel('Pitch (rad)');
+title('Drone Pitch Angle');
+
+subplot(3,1,3);
 plot(time, psi_array);
 xlabel('Time (s)');
 ylabel('Yaw (rad)');
 title('Drone Yaw Angle');
+
+figure;
+plot(x_array, y_array);
+xlabel('X Position (m)');
+ylabel('Y Position (m)');
+title('Drone Path');
