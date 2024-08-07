@@ -1,3 +1,7 @@
+clc;
+close all;
+clear;
+
 % Parameters
 m = 1.0;    % mass of the drone (kg)
 g = 9.81;   % gravitational acceleration (m/s^2)
