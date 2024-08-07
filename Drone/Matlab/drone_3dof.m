@@ -22,7 +22,7 @@ Kp_roll = 1.0;  % Proportional gain for roll
 Kd_roll = 1.5;  % Derivative gain for roll
 
 % State variables
-x = 0; y = 0; z = 0; % position (m)
+x = 0; y = 0; z = 10; % position (m), z is set to 10 for constant altitude
 phi = 0; theta = 0; psi = 0; % orientation (rad)
 u = 0; v = 0; w = 0; % linear velocities (m/s)
 p = 0; q = 0; r = 0; % angular velocities (rad/s)
@@ -40,7 +40,7 @@ time = 0:dt:50;
 % Initialize arrays for storing results
 x_array = zeros(size(time));
 y_array = zeros(size(time));
-z_array = zeros(size(time));
+z_array = z * ones(size(time)); % constant altitude
 phi_array = zeros(size(time));
 theta_array = zeros(size(time));
 psi_array = zeros(size(time));
@@ -102,11 +102,11 @@ for t = 1:length(time)
     % Equations of motion
     x_dot = u;
     y_dot = v;
-    z_dot = w;
+    z_dot = 0; % z_dot is zero to maintain constant altitude
     
     u_dot = r * v - q * w - g * theta + Fx / m;
     v_dot = p * w - r * u + g * phi + Fy / m;
-    w_dot = q * u - p * v + Ft / m;
+    w_dot = 0; % w_dot is zero to maintain constant altitude
     
     p_dot = (Iy - Iz) * q * r / Ix + tau_x / Ix;
     q_dot = (Iz - Ix) * p * r / Iy + tau_y / Iy;
@@ -119,11 +119,10 @@ for t = 1:length(time)
     % Update state variables
     x = x + x_dot * dt;
     y = y + y_dot * dt;
-    z = z + z_dot * dt;
     
     u = u + u_dot * dt;
     v = v + v_dot * dt;
-    w = w + w_dot * dt;
+    w = 0; % w is zero to maintain constant altitude
     
     p = p + p_dot * dt;
     q = q + q_dot * dt;
@@ -136,13 +135,22 @@ for t = 1:length(time)
     % Store results
     x_array(t) = x;
     y_array(t) = y;
-    z_array(t) = z;
+    z_array(t) = z; % constant altitude
     phi_array(t) = phi;
     theta_array(t) = theta;
     psi_array(t) = psi;
 end
 
-% Plot results
+% Plot results in 3D
+figure;
+plot3(x_array, y_array, z_array);
+xlabel('X Position (m)');
+ylabel('Y Position (m)');
+zlabel('Z Position (m)');
+title('Drone Path in 3D');
+grid on;
+
+% Plot results in 2D
 figure;
 subplot(3,1,1);
 plot(time, x_array);
