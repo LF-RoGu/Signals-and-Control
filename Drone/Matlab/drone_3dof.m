@@ -72,10 +72,10 @@ for t = 1:length(time)
     Fy = Kp_pos * (y_des - y) + Kd_pos * (v_des - v);
     
     % Update motor speeds based on control inputs
-    Omega1 = sqrt((Ft / (4 * b)) - (Fx / (2 * b * l)) - (Fy / (2 * b * l)) - (tau_z / (4 * d)));
-    Omega2 = sqrt((Ft / (4 * b)) - (Fx / (2 * b * l)) + (Fy / (2 * b * l)) + (tau_z / (4 * d)));
-    Omega3 = sqrt((Ft / (4 * b)) + (Fx / (2 * b * l)) + (Fy / (2 * b * l)) - (tau_z / (4 * d)));
-    Omega4 = sqrt((Ft / (4 * b)) + (Fx / (2 * b * l)) - (Fy / (2 * b * l)) + (tau_z / (4 * d)));
+    Omega1 = sqrt((Ft / (4 * b)) - (tau_x / (2 * b * l)) - (tau_y / (2 * b * l)) - (tau_z / (4 * b * l)));
+    Omega2 = sqrt((Ft / (4 * b)) - (tau_x / (2 * b * l)) + (tau_y / (2 * b * l)) + (tau_z / (4 * b * l)));
+    Omega3 = sqrt((Ft / (4 * b)) + (tau_x / (2 * b * l)) + (tau_y / (2 * b * l)) - (tau_z / (4 * b * l)));
+    Omega4 = sqrt((Ft / (4 * b)) + (tau_x / (2 * b * l)) - (tau_y / (2 * b * l)) + (tau_z / (4 * b * l)));
     
     % Ensure motor speeds are non-negative
     Omega1 = max(0, Omega1);
@@ -103,7 +103,7 @@ for t = 1:length(time)
     % Update state variables
     x = x + x_dot * dt;
     y = y + y_dot * dt;
-    psi = psi + psi_dot * dt;
+    z = z + z_dot * dt;
     
     u = u + u_dot * dt;
     v = v + v_dot * dt;
@@ -115,6 +115,7 @@ for t = 1:length(time)
     
     phi = phi + phi_dot * dt;
     theta = theta + theta_dot * dt;
+    psi = psi + psi_dot * dt;
     
     % Store results
     x_array(t) = x;
