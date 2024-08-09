@@ -10,10 +10,11 @@ Iy = 0.01;  % moment of inertia around y-axis (kg*m^2)
 Iz = 0.02;  % moment of inertia around z-axis (kg*m^2)
 l = 0.1;    % distance from the center to the propeller (m)
 b = 1e-6;   % thrust factor (N/(rad/s)^2)
+d = 1e-7;   % drag factor (N*m/(rad/s)^2)
 
 % PID controller gains
-Kp_pos = 1.0;  % Proportional gain for position
-Kd_pos = 20.5;  % Derivative gain for position
+Kp_pos = 2.0;  % Proportional gain for position
+Kd_pos = 0.5;  % Derivative gain for position
 Kp_yaw = 1.0;  % Proportional gain for yaw
 Kd_yaw = 0.5;  % Derivative gain for yaw
 Kp_pitch = 1.0; % Proportional gain for pitch
@@ -26,6 +27,10 @@ x = 0; y = 0; z = 10; % position (m), z is set to 10 for constant altitude
 phi = 0; theta = 0; psi = 0; % orientation (rad)
 u = 0; v = 0; w = 0; % linear velocities (m/s)
 p = 0; q = 0; r = 0; % angular velocities (rad/s)
+
+% Target coordinates
+x_target = 10; % Target X coordinate (m)
+y_target = 10; % Target Y coordinate (m)
 
 % Motor speeds (rad/s)
 Omega1 = 1000;
@@ -45,16 +50,11 @@ phi_array = zeros(size(time));
 theta_array = zeros(size(time));
 psi_array = zeros(size(time));
 
-% Custom path parameters
-% Define the desired sine wave trajectory
-desired_trajectory = @(t) [t, 5 * sin(0.5 * t)]; % sine wave along y-axis
-
 % Simulation loop
 for t = 1:length(time)
-    % Desired position
-    pos_des = desired_trajectory(time(t));
-    x_des = pos_des(1);
-    y_des = pos_des(2);
+    % Desired position based on target coordinates
+    x_des = x_target;
+    y_des = y_target;
     
     % Compute desired velocities (finite difference approximation)
     if t == 1
@@ -76,10 +76,10 @@ for t = 1:length(time)
     Fy = Kp_pos * (y_des - y) + Kd_pos * (v_des - v);
     
     % Update motor speeds based on control inputs
-    Omega1 = sqrt((Ft / (4 * b)) - (tau_x / (2 * b * l)) - (tau_y / (2 * b * l)) - (tau_z / (4 * b * l)));
-    Omega2 = sqrt((Ft / (4 * b)) - (tau_x / (2 * b * l)) + (tau_y / (2 * b * l)) + (tau_z / (4 * b * l)));
-    Omega3 = sqrt((Ft / (4 * b)) + (tau_x / (2 * b * l)) + (tau_y / (2 * b * l)) - (tau_z / (4 * b * l)));
-    Omega4 = sqrt((Ft / (4 * b)) + (tau_x / (2 * b * l)) - (tau_y / (2 * b * l)) + (tau_z / (4 * b * l)));
+    Omega1 = sqrt((Ft / (4 * b)) - (tau_x / (2 * b * l)) - (tau_y / (2 * b * l)) - (tau_z / (4 * d)));
+    Omega2 = sqrt((Ft / (4 * b)) - (tau_x / (2 * b * l)) + (tau_y / (2 * b * l)) + (tau_z / (4 * d)));
+    Omega3 = sqrt((Ft / (4 * b)) + (tau_x / (2 * b * l)) + (tau_y / (2 * b * l)) - (tau_z / (4 * d)));
+    Omega4 = sqrt((Ft / (4 * b)) + (tau_x / (2 * b * l)) - (tau_y / (2 * b * l)) + (tau_z / (4 * d)));
     
     % Ensure motor speeds are non-negative
     Omega1 = max(0, Omega1);
@@ -97,7 +97,7 @@ for t = 1:length(time)
     Ft = thrust1 + thrust2 + thrust3 + thrust4;
     tau_x = l * (thrust2 - thrust4);
     tau_y = l * (thrust3 - thrust1);
-    tau_z = b * (Omega1 - Omega2 + Omega3 - Omega4);
+    tau_z = d * (Omega1 - Omega2 + Omega3 - Omega4);
     
     % Equations of motion
     x_dot = u;
