@@ -13,8 +13,8 @@ b = 1e-6;   % thrust factor (N/(rad/s)^2)
 d = 1e-7;   % drag factor (N*m/(rad/s)^2)
 
 % PID controller gains
-Kp_pos = 2.0;  % Proportional gain for position
-Kd_pos = 0.5;  % Derivative gain for position
+Kp_pos = 5.0;  % Proportional gain for position (increased for better control)
+Kd_pos = 1.0;  % Derivative gain for position (increased for damping)
 Kp_yaw = 1.0;  % Proportional gain for yaw
 Kd_yaw = 0.5;  % Derivative gain for yaw
 Kp_pitch = 1.0; % Proportional gain for pitch
@@ -28,9 +28,8 @@ phi = 0; theta = 0; psi = 0; % orientation (rad)
 u = 0; v = 0; w = 0; % linear velocities (m/s)
 p = 0; q = 0; r = 0; % angular velocities (rad/s)
 
-% Target coordinates
-x_target = 10; % Target X coordinate (m)
-y_target = 10; % Target Y coordinate (m)
+% Waypoints
+waypoints = [10, 10; 15, 5; 20, 20]; % [x1, y1; x2, y2; ...]
 
 % Motor speeds (rad/s)
 Omega1 = 1000;
@@ -50,8 +49,22 @@ phi_array = zeros(size(time));
 theta_array = zeros(size(time));
 psi_array = zeros(size(time));
 
+% Current waypoint index
+waypoint_idx = 1;
+tolerance = 0.1; % reduced tolerance for more precise waypoint achievement
+max_velocity = 2; % maximum velocity (m/s) for smooth approach
+
 % Simulation loop
 for t = 1:length(time)
+    % Check if the current waypoint is reached
+    if waypoint_idx <= size(waypoints, 1)
+        x_target = waypoints(waypoint_idx, 1);
+        y_target = waypoints(waypoint_idx, 2);
+    else
+        x_target = waypoints(end, 1);
+        y_target = waypoints(end, 2);
+    end
+    
     % Desired position based on target coordinates
     x_des = x_target;
     y_des = y_target;
@@ -63,6 +76,19 @@ for t = 1:length(time)
     else
         u_des = (x_des - x_array(t-1)) / dt;
         v_des = (y_des - y_array(t-1)) / dt;
+    end
+    
+    % Calculate distance to target
+    distance_to_target = norm([x_des - x, y_des - y]);
+    
+    % Velocity control: limit speed as drone approaches waypoint
+    if distance_to_target < 5  % Start reducing speed within 5 meters of the waypoint
+        scale_factor = distance_to_target / 5;
+        u_des = max_velocity * scale_factor * sign(u_des);
+        v_des = max_velocity * scale_factor * sign(v_des);
+    else
+        u_des = max_velocity * sign(u_des);
+        v_des = max_velocity * sign(v_des);
     end
     
     % Thrust and torques
@@ -86,18 +112,6 @@ for t = 1:length(time)
     Omega2 = max(0, Omega2);
     Omega3 = max(0, Omega3);
     Omega4 = max(0, Omega4);
-    
-    % Call the motor function to get the thrust for each motor
-    thrust1 = dron_motor(time(t), Omega1 * (60 / (2 * pi))); % Convert rad/s to RPM
-    thrust2 = dron_motor(time(t), Omega2 * (60 / (2 * pi)));
-    thrust3 = dron_motor(time(t), Omega3 * (60 / (2 * pi)));
-    thrust4 = dron_motor(time(t), Omega4 * (60 / (2 * pi)));
-    
-    % Total thrust and torques
-    Ft = thrust1 + thrust2 + thrust3 + thrust4;
-    tau_x = l * (thrust2 - thrust4);
-    tau_y = l * (thrust3 - thrust1);
-    tau_z = d * (Omega1 - Omega2 + Omega3 - Omega4);
     
     % Equations of motion
     x_dot = u;
@@ -139,37 +153,56 @@ for t = 1:length(time)
     phi_array(t) = phi;
     theta_array(t) = theta;
     psi_array(t) = psi;
+
+    % Check if the drone is within the tolerance of the current waypoint
+    if norm([x - x_target, y - y_target]) < tolerance
+        waypoint_idx = waypoint_idx + 1; % Move to the next waypoint
+    end
 end
 
-% Plot results in 3D
+% Plot results in 3D with waypoints
 figure;
-plot3(x_array, y_array, z_array);
+plot3(x_array, y_array, z_array, 'b');
+hold on;
+plot3(waypoints(:,1), waypoints(:,2), z * ones(size(waypoints, 1), 1), 'rs', 'MarkerSize', 10, 'LineWidth', 2);
 xlabel('X Position (m)');
 ylabel('Y Position (m)');
 zlabel('Z Position (m)');
-title('Drone Path in 3D');
+title('Drone Path in 3D with Waypoints');
 grid on;
+hold off;
 
-% Plot results in 2D
+% Plot results in 2D with waypoints
 figure;
 subplot(3,1,1);
-plot(time, x_array);
+plot(time, x_array, 'b');
 xlabel('Time (s)');
 ylabel('X Position (m)');
 title('Drone X Position');
 
 subplot(3,1,2);
-plot(time, y_array);
+plot(time, y_array, 'b');
 xlabel('Time (s)');
 ylabel('Y Position (m)');
 title('Drone Y Position');
 
 subplot(3,1,3);
-plot(time, z_array);
+plot(time, z_array, 'b');
 xlabel('Time (s)');
 ylabel('Z Position (m)');
 title('Drone Z Position');
 
+figure;
+plot(x_array, y_array, 'b');
+hold on;
+plot(waypoints(:,1), waypoints(:,2), 'rs', 'MarkerSize', 10, 'LineWidth', 2);
+xlabel('X Position (m)');
+ylabel('Y Position (m)');
+title('Drone Path with Waypoints');
+grid on;
+hold off;
+
+% Plot orientation angles
 figure;
 subplot(3,1,1);
 plot(time, phi_array);
@@ -188,9 +221,3 @@ plot(time, psi_array);
 xlabel('Time (s)');
 ylabel('Yaw (rad)');
 title('Drone Yaw Angle');
-
-figure;
-plot(x_array, y_array);
-xlabel('X Position (m)');
-ylabel('Y Position (m)');
-title('Drone Path');
