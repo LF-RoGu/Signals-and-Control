@@ -13,14 +13,14 @@ b = 1e-6;   % thrust factor (N/(rad/s)^2)
 d = 1e-7;   % drag factor (N*m/(rad/s)^2)
 
 % PID controller gains
-Kp_pos = 5.0;  % Proportional gain for position (increased for better control)
-Kd_pos = 1.0;  % Derivative gain for position (increased for damping)
-Kp_yaw = 1.0;  % Proportional gain for yaw
-Kd_yaw = 0.5;  % Derivative gain for yaw
-Kp_pitch = 1.0; % Proportional gain for pitch
+Kp_pos = 1.5;  % Proportional gain for position (increased for better control)
+Kd_pos = 3.0;  % Derivative gain for position (increased for damping)
+Kp_yaw = 2.0;  % Proportional gain for yaw
+Kd_yaw = 5.0;  % Derivative gain for yaw
+Kp_pitch = 2.0; % Proportional gain for pitch
 Kd_pitch = 1.5; % Derivative gain for pitch
-Kp_roll = 1.0;  % Proportional gain for roll
-Kd_roll = 1.5;  % Derivative gain for roll
+Kp_roll = 2.0;  % Proportional gain for roll
+Kd_roll = 5.0;  % Derivative gain for roll
 
 % State variables
 x = 0; y = 0; z = 10; % position (m), z is set to 10 for constant altitude
