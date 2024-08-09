@@ -17,19 +17,19 @@ d = 1e-7;   % Drag factor (N*m/(rad/s)^2)
 % -------------------------------------------------------------------------
 % PID Controller Gains
 % -------------------------------------------------------------------------
-Kp_pos = 8.0;  % Proportional gain for position
-Ki_pos = 0.2;  % Integral gain for position (lowered to prevent windup)
-Kd_pos = 28.0;  % Derivative gain for position (adjusted for stability)
+Kp_pos = 10.0;  % Proportional gain for position
+Ki_pos = 1.0;  % Integral gain for position
+Kd_pos = 28.0;  % Derivative gain for position
 
-Kp_yaw = 50.0;  % Proportional gain for yaw (yaw angle control)
+Kp_yaw = 25.0;  % Proportional gain for yaw (yaw angle control)
 Ki_yaw = 1.0;  % Integral gain for yaw
 Kd_yaw = 12.0;  % Derivative gain for yaw
 
-Kp_pitch = 50.0; % Proportional gain for pitch (pitch angle control)
+Kp_pitch = 35.0; % Proportional gain for pitch (pitch angle control)
 Ki_pitch = 1.0; % Integral gain for pitch
 Kd_pitch = 12.0; % Derivative gain for pitch
 
-Kp_roll = 50.0;  % Proportional gain for roll (roll angle control)
+Kp_roll = 20.0;  % Proportional gain for roll (roll angle control)
 Ki_roll = 5.0;  % Integral gain for roll
 Kd_roll = 12.0;  % Derivative gain for roll
 
@@ -46,7 +46,7 @@ p = 0; q = 0; r = 0; % Angular velocities (rad/s)
 % Waypoints (Target Positions)
 % -------------------------------------------------------------------------
 % Define waypoints in 3D space
-waypoints = [10, 10, 12; 15, 5, 3; 20, 20, 10]; % [x1, y1, z1; x2, y2, z2; ...]
+waypoints = [10, 10, 12; 30, -10, 15; -20, 20, 5; 50, 30, 0]; % [x1, y1, z1; x2, y2, z2; ...]
 
 % -------------------------------------------------------------------------
 % Motor Speeds Initialization
@@ -61,7 +61,7 @@ Omega4 = 1000; % Motor 4 speed (rad/s)
 % Simulation Parameters
 % -------------------------------------------------------------------------
 dt = 0.01;  % Time step (s)
-time = 0:dt:80;  % Simulation time vector (s)
+time = 0:dt:250;  % Extended simulation time vector (s)
 
 % Arrays to store the drone's position, orientation, and motor speeds over time
 x_array = zeros(size(time));
@@ -79,8 +79,8 @@ Omega4_array = zeros(size(time));
 % Control and Navigation Variables
 % -------------------------------------------------------------------------
 waypoint_idx = 1;  % Current waypoint index
-tolerance = 0.3;   % Distance tolerance to consider waypoint reached (m)
-max_velocity = 5;  % Maximum velocity (m/s) for smooth approach to waypoints
+tolerance = 0.05;   % Reduced distance tolerance to ensure precise waypoint tracking (m)
+max_velocity = 15;  % Increased maximum velocity (m/s) for faster movements
 
 % Initialize PID integral errors
 integral_error_x = 0;
@@ -132,7 +132,7 @@ for t = 1:length(time)
     distance_to_target = norm([error_x, error_y, error_z]);
     
     % Limit the speed as the drone approaches the waypoint to prevent overshooting
-    if distance_to_target < 5  % Start reducing speed within 10 meters of the waypoint
+    if distance_to_target < 5  % Start reducing speed within 5 meters of the waypoint
         scale_factor = distance_to_target / 5;
         u_des = max_velocity * scale_factor * sign(u_des);
         v_des = max_velocity * scale_factor * sign(v_des);
@@ -285,26 +285,6 @@ plot(time, z_array, 'b');
 xlabel('Time (s)');
 ylabel('Z Position (m)');
 title('Drone Z Position');
-
-% Plot orientation angles over time
-figure;
-subplot(3,1,1);
-plot(time, phi_array);
-xlabel('Time (s)');
-ylabel('Roll (rad)');
-title('Drone Roll Angle');
-
-subplot(3,1,2);
-plot(time, theta_array);
-xlabel('Time (s)');
-ylabel('Pitch (rad)');
-title('Drone Pitch Angle');
-
-subplot(3,1,3);
-plot(time, psi_array);
-xlabel('Time (s)');
-ylabel('Yaw (rad)');
-title('Drone Yaw Angle');
 
 % Plot motor speeds over time
 figure;
