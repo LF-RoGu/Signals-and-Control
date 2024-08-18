@@ -9,26 +9,28 @@ Ix = 0.01;  % Moment of inertia around x-axis (kg*m^2)
 Iy = 0.01;  % Moment of inertia around y-axis (kg*m^2)
 Iz = 0.02;  % Moment of inertia around z-axis (kg*m^2)
 
-% PID controller gains
-Kp_pos = 5.0;  % Proportional gain for position
-Ki_pos = 0.4;  % Integral gain for position
-Kd_pos = 6.8;  % Derivative gain for position
+% Updated PID controller gains
+Kp_pos = 2.5;  % Proportional gain for position
+Ki_pos = 0.05; % Integral gain for position
+Kd_pos = 4.5;  % Derivative gain for position
 
-% PID gains for yaw, roll, and pitch
-Kp_yaw = 2.5;  % Proportional gain for yaw
-Ki_yaw = 0.5;  % Integral gain for yaw
-Kd_yaw = 2.0;  % Derivative gain for yaw
+% Updated PID gains for yaw, roll, and pitch
+Kp_yaw = 1.5;  % Proportional gain for yaw
+Ki_yaw = 0.2;  % Integral gain for yaw
+Kd_yaw = 1.2;  % Derivative gain for yaw
 
-Kp_pitch = 3.0;  % Proportional gain for pitch
-Ki_pitch = 0.8;  % Integral gain for pitch
-Kd_pitch = 3.0;  % Derivative gain for pitch
+Kp_pitch = 2.0;  % Proportional gain for pitch
+Ki_pitch = 0.4;  % Integral gain for pitch
+Kd_pitch = 2.2;  % Derivative gain for pitch
 
-Kp_roll = 3.0;  % Proportional gain for roll
-Ki_roll = 0.8;  % Integral gain for roll
-Kd_roll = 3.0;  % Derivative gain for roll
+Kp_roll = 2.0;  % Proportional gain for roll
+Ki_roll = 0.4;  % Integral gain for roll
+Kd_roll = 2.2;  % Derivative gain for roll
+
+
 
 % Time interval for plotting arrows (in seconds)
-arrow_plot_interval = 4.0;  % Plot arrows every 1 second
+arrow_plot_interval = 2.0;  % Plot arrows every 1 second
 
 % State-space matrices
 A = [0, 0, 0, 1, 0, 0;   % x_dot = u
@@ -54,18 +56,19 @@ yaw0 = 0;
 pitch0 = 0;
 roll0 = 0;
 
-% Updated waypoints for smoother yaw transitions, including return to origin
+% Updated waypoints for a zig-zag pattern
 waypoints = [0, 0, 10; 
-             5, 2, 12; 
+             5, -2, 12; 
              10, 5, 14; 
-             15, 10, 16; 
+             15, -10, 16; 
              20, 15, 18; 
-             25, 20, 20; 
+             25, -20, 20; 
              30, 25, 18; 
-             35, 30, 16; 
+             35, -30, 16; 
              40, 35, 14; 
-             45, 40, 12;
+             45, -40, 12;
              0, 0, 10];  % Final waypoint returns to origin
+
 
 current_waypoint = 1;
 tolerance = 0.5; % Distance tolerance to consider waypoint reached
