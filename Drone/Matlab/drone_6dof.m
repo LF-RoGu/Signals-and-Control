@@ -9,6 +9,9 @@ Ix = 0.01;  % Moment of inertia around x-axis (kg*m^2)
 Iy = 0.01;  % Moment of inertia around y-axis (kg*m^2)
 Iz = 0.02;  % Moment of inertia around z-axis (kg*m^2)
 
+% Desired speed (m/s)
+desired_speed = 5.0;
+
 % PID controller gains
 Kp_pos = 5.0;  % Proportional gain for position
 Ki_pos = 0.4;  % Integral gain for position
@@ -28,7 +31,7 @@ Ki_roll = 0.8;  % Integral gain for roll
 Kd_roll = 3.0;  % Derivative gain for roll
 
 % Time interval for plotting arrows (in seconds)
-arrow_plot_interval = 2.0;  % Plot arrows every 1 second
+arrow_plot_interval = 2.0;  % Plot arrows every 2 seconds
 
 % State-space matrices
 A = [0, 0, 0, 1, 0, 0;   % x_dot = u
@@ -92,6 +95,12 @@ integral_error_yaw = 0;
 integral_error_pitch = 0;
 integral_error_roll = 0;
 
+% Speed control variables
+integral_speed_error = 0;
+Kp_speed = 2.0;  % Proportional gain for speed
+Ki_speed = 0.1;  % Integral gain for speed
+Kd_speed = 1.5;  % Derivative gain for speed
+
 % Initialize figure for plotting
 figure;
 hold on;
@@ -122,6 +131,29 @@ for t = 1:length(time)
     u_des = Kp_pos * error_pos(1) + Ki_pos * integral_error_pos(1) - Kd_pos * x(4);
     v_des = Kp_pos * error_pos(2) + Ki_pos * integral_error_pos(2) - Kd_pos * x(5);
     w_des = Kp_pos * error_pos(3) + Ki_pos * integral_error_pos(3) - Kd_pos * x(6);
+    
+    % Calculate current speed
+    current_speed = norm([x(4), x(5), x(6)]);
+    
+    % Avoid division by zero
+    if current_speed < 1e-6
+        current_speed = 1e-6;
+    end
+    
+    % Speed control (PID)
+    speed_error = desired_speed - current_speed;
+    integral_speed_error = integral_speed_error + speed_error * dt;
+    speed_correction = Kp_speed * speed_error + Ki_speed * integral_speed_error - Kd_speed * (current_speed - norm([x(4), x(5), x(6)]));
+    
+    % Adjust desired velocities based on speed correction
+    velocity_correction_factor = (desired_speed + speed_correction) / current_speed;
+    
+    % Apply velocity correction only if it's meaningful
+    if ~isnan(velocity_correction_factor) && isfinite(velocity_correction_factor) && velocity_correction_factor > 0
+        u_des = u_des * velocity_correction_factor;
+        v_des = v_des * velocity_correction_factor;
+        w_des = w_des * velocity_correction_factor;
+    end
     
     % Yaw control
     yaw_error = atan2(y_des - x(2), x_des - x(1)) - yaw;
