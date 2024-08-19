@@ -28,7 +28,7 @@ Ki_roll = 0.8;  % Integral gain for roll
 Kd_roll = 3.0;  % Derivative gain for roll
 
 % Time interval for plotting arrows (in seconds)
-arrow_plot_interval = 2.0;  % Plot arrows every 2 seconds
+arrow_plot_interval = 2.0;  % Plot arrows every 1 second
 
 % State-space matrices
 A = [0, 0, 0, 1, 0, 0;   % x_dot = u
@@ -45,17 +45,17 @@ B = [0, 0, 0;
      0, 1/m, 0; 
      0, 0, 1/m];
 
-C = eye(12);
-D = zeros(12, 6);
+C = eye(6);
+D = zeros(6, 3);
 
 % Initial conditions
-x0 = [0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0];  % [x; y; z; u; v; w; phi; theta; psi; p; q; r]
+x0 = [0; 0; 0; 0; 0; 0];  % [x; y; z; u; v; w]
 yaw0 = 0;
 pitch0 = 0;
 roll0 = 0;
 
 %           [x,     y,      z]
-waypoints = [0,     0,      10; 
+waypointsA = [0,     0,      10; 
              5,     2,      12; 
              -10,   5,      14; 
              15,    10,     16; 
@@ -66,6 +66,21 @@ waypoints = [0,     0,      10;
              -40,   35,     14; 
              45,    40,     12;
              0,     0,      0];  % Final waypoint returns to origin
+
+%           [x,     y,      z]
+waypointsB = [0,     0,      10; 
+             5,     2,      12; 
+             10,    5,      14; 
+             15,    10,     16; 
+             20,    15,     18; 
+             25,    20,     20; 
+             30,    25,     18; 
+             35,    30,     16; 
+             40,    35,     14; 
+             45,    40,     12;
+             0,     0,      0];  % Final waypoint returns to origin
+
+waypoints = waypointsA;
 
 current_waypoint = 1;
 tolerance = 0.5; % Distance tolerance to consider waypoint reached
@@ -81,7 +96,7 @@ pitch = pitch0;
 roll = roll0;
 
 % Initialize arrays for storing results
-x_array = zeros(12, length(time));
+x_array = zeros(6, length(time));
 yaw_array = zeros(1, length(time));
 pitch_array = zeros(1, length(time));
 roll_array = zeros(1, length(time));
@@ -148,8 +163,8 @@ for t = 1:length(time)
     pitch_array(t) = pitch;
     yaw_array(t) = yaw;
     
-    % Input vector u(t) [u_des; v_des; w_des; p_des; q_des; r_des]
-    u = [u_des; v_des; w_des; roll_dot; pitch_dot; yaw_dot];
+    % Input vector u(t) [u_des; v_des; w_des]
+    u = [u_des; v_des; w_des];
     
     % State-space equation
     x_dot = A * x + B * u;
