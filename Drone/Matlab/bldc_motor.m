@@ -1,26 +1,20 @@
-function thrust = dron_motor(t, w_ref)
-    % Parameters for the motor model
-    R = 15;
-    L = 5 * 10^-3;
-    Jm = 8.5 * 10^-6;
-    B_friction = 3.5 * 10^-7;
-    Kt = 12 * 10^-3;
-    Kb = 12 * 10^-3;
-
-    % State-space model matrices
-    a = R / L;
-    b = Kb / L;
-    c = Kt / Jm;
-    d = B_friction / Jm;
-    e = 1 / L;
+function thrust = bldc_motor(t, v_ref)
+    % Parameters for the BLDC motor model
+    R = 0.05;            % Resistance (Ohms)
+    L = 0.001;           % Inductance (Henries)
+    J = 0.00001;         % Moment of inertia (kg*m^2)
+    B_friction = 0.0001; % Friction coefficient (N*m*s)
+    Kt = 0.01;           % Torque constant (N*m/A)
+    Ke = 0.01;           % Back-EMF constant (V*s/rad)
     
-    A = [-a, -b; c, -d];
-    B = [e; 0];
+    % State-space model matrices
+    A = [-R/L, -Ke/L; Kt/J, -B_friction/J];
+    B = [1/L; 0];
     C = [0, 1];
     D = 0;
-
-    % Desired poles
-    desired_poles = [-4; -4];
+    
+    % Desired poles for the system
+    desired_poles = [-50; -50];
     
     % Controllability matrix and gain calculations
     Mc = [B A * B];
@@ -32,9 +26,9 @@ function thrust = dron_motor(t, w_ref)
     initial_conditions = [0, 0];
     
     % Solve the differential equations using ode45
-    [~, X] = ode45(@(t, X) motor_cd_sys(t, X, w_ref, A, B, K, F), [0 0.01], initial_conditions);
+    [~, X] = ode45(@(t, X) motor_cd_sys(t, X, v_ref, A, B, K, F), [0 0.1], initial_conditions);
     
-    % Get the angular velocity (RPM)
+    % Get the angular velocity (rad/s)
     angular_velocity = X(end, 2);
     rpm = angular_velocity * (60 / (2 * pi));
     
@@ -42,12 +36,9 @@ function thrust = dron_motor(t, w_ref)
     thrust = calculate_thrust(rpm);
 end
 
-function dX = motor_cd_sys(t, X, w_ref, A, B, K, F)
-    % Reference angular velocity
-    ref = w_ref * (2 * pi / 60);
-    
+function dX = motor_cd_sys(t, X, v_ref, A, B, K, F)
     % Control input calculation
-    U = K * X + F * ref;
+    U = K * X + F * v_ref;
     
     % State-space model differential equations
     dX = A * X + B * U;
@@ -55,9 +46,9 @@ end
 
 function thrust = calculate_thrust(rpms)
     % Thrust calculation with realistic propeller values
-    C_T = 0.1;      % Thrust coefficient
+    C_T = 0.2;      % Thrust coefficient
     rho = 1.225;    % Air density (kg/m³)
-    D = 0.254;      % Propeller diameter (meters, approximately 10 inches)
+    D = 0.5;        % Propeller diameter (meters, approximately 20 inches)
 
     % Calculate thrust
     thrust = C_T * rho * (rpms / 60).^2 * D^4;
