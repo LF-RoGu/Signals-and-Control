@@ -16,49 +16,130 @@
 \tableofcontents
 
 \chapter{Introduction}
+Autonomous operation of aerial vehicles relies heavily on onboard stabilization and trajectory tracking capabilities. 
+Ensuring that these systems achieve stable flight requires significant effort, particularly at smaller scales where environmental effects and sensor noise play a larger role. 
+Since the number and complexity of applications for UAVs continue to grow, the control techniques used must also evolve to provide better performance and increased versatility.
+Historically, simplistic linear control techniques were employed for computational ease and stable hover flight. 
+However, with advancements in modeling techniques and faster onboard computational capabilities, comprehensive nonlinear control methods have become achievable in real-time applications.
+Nonlinear methodologies promise to significantly enhance the performance of UAVs, making them more robust and capable of handling complex tasks.
 
-\section{Background}
-The design of a quadcopter is an interesting design as being a system that only requires three components that apply a force to this system.
-It is able to move fully in a three-dimentional plane. However this is an unique feature of a quadcopter, as result of this difference of input versus outputs, the system becomes underactuated, meaning that we have less inputs in the system than outputs.
-A negative effect of this underactuated system is that this system by nature can not reach a natural stable state. Meaning that unless the system is at rest, this system will not reach a stable state without the help of a controller.
-\section{Purpose}
-The final purpose of this paper is to provide an understanding on how Quadcopters work, as well as introduce a few of the most common control models that are used in the market.
-While providing how the space state system was obtained, and a simulation on how this system will be working. While at this moment an IMU will not be implemented, the controller will only work in regards of the position of the system as a whole, while disregarding the yaw, pitchand roll.
+In this context, modeling drones using a 6 Degrees of Freedom (6 DOF) framework becomes essential. 
+The 6 DOF model captures both the translational and rotational dynamics of the drone, providing a comprehensive mathematical framework to describe its behavior. 
+The model includes all six independent motions that a drone can undergo: translation along the x, y, and z axes (forward/backward, left/right, upward/downward) and rotation around the x, y, and z axes (roll, pitch, and yaw).
 
-\section{Limitations}
-\section{Overview}
-This document presents the modeling and control strategies for a quadcopter drone with both 3 Degrees of Freedom (DOF) and 6 Degrees of Freedom (DOF).
-The drone's dynamics are derived using Newton's and Euler's laws.
-A linearized version of the model is obtained to facilitate control design.
-Various control strategies are explored to achieve stable and accurate flight control.
+The control strategies developed for these 6 DOF models must address the challenges posed by the UAV's small size and the associated environmental and sensor-related issues. 
+Various control strategies, including both linear and nonlinear methods, are explored to stabilize and control the drone effectively. The integration of these advanced control techniques, alongside accurate modeling of the drone's dynamics, is crucial for achieving reliable and efficient operation of sUAVs in real-world environments.
 
-\chapter{Quadrotor Dynamics}
+\chapter{Quadcopter Dynamics}
+The modeling and control of drones, particularly quadcopters, is a challenging yet vital area of research in the field of aerospace and robotics. 
+Drones are complex systems characterized by their ability to maneuver in three-dimensional space, which is best represented using a 6 Degrees of Freedom (6 DOF) model. 
+This model captures both the translational and rotational dynamics of the drone, providing a comprehensive mathematical framework to describe its behavior.
 
-\section{Euler Angles}
-For understanding a little more how the system, we will use a little this euler angles and use as well some of the terminology that it is used in aeronautics. As this works for use in terms of orientations.
-In aeronautics the system NED is commmonly used to provide orientation with perpective of the vehicle. Where the X is pointing at the fore, the Y to starboard and finally the Z to the keel of the vehicle.
-Now lets use this perspective to analyze the forces applied to the vehicle. Where the rotational velocity of the vehicle is measured by the total of three different forces.
-The physical forces around the fore or X axis (lets call this force 'p'), the forces around Y  (lets call this force 'q') and lastly the forces around Z axis (lets call this force 'r').
-Now the velocities around this same axis that we mentioned before will be: u, v and w (This variables are just being used as commonly used in control models).
-With these now we can describe the variables that will be used for the euler angles. Where the orientation of a local system related to a global can be used, such as roll, pitch and roll.
+A drone's dynamics are described using the principles of Newtonian mechanics and rigid body dynamics. These principles are applied to two separate but interconnected motions:
+\begin{itemize}
+    \item Translational motion: Describes the movement of the drone along the x, y, and z axes.
+    \item Rotational motion: Describes the changes in the drone’s orientation (roll, pitch, and yaw).
+\end{itemize}
 
-\section{Mathematical Model}
-The quadcopter is modeled as a rigid body with six degrees of freedom (6 DOF):
-three translational movements along the x, y, and z axes, and three rotational movements around the x, y, and z axes (roll, pitch, and yaw).
-However we say that the mathematical model of the quadcopter is not optimal.
-The reason behind this is of the outputs of the system versus the input of the same system.
-As an input, the system can only rely on four forces that will change the behaviour of the system, but with those four forces the system has six different results.
-Even from the change of a single force.
-The dynamics are described using Newton-Euler formalism.
+In the 6 DOF model, the translational and rotational dynamics are coupled. For example, a change in the drone’s pitch or roll angle (rotation) will alter the direction of the thrust force, which in turn affects the translational motion.
 
-\subsection{Coordinate Systems}
-Two coordinate systems are used: the inertial frame (fixed) and the body frame (attached to the quadrotor). The transformation between these frames is described using rotation matrices.
+\section{Translational Motion}
+The translational dynamics describe the drone’s movement along the x, y, and z axes of the inertial frame. These dynamics are governed by Newton’s second law of motion:
+\[
+m \ddot{\mathbf{r}} = \mathbf{F}_{\text{thrust}} + \mathbf{F}_{\text{gravity}} + \mathbf{F}_{\text{external}}
+\]
+In the body frame, the total thrust is generated by the drone's rotors and is distributed in all directions depending on the drone’s orientation.
+\begin{itemize}
+    \item \(m\) is the mass of the drone.
+    \item \(\mathbf{r} = [x, y, z]^\text{T}\) is the position vector of the drone.
+    \item \(\mathbf{F}_{\text{thrust}}\) represents the thrust forces generated by the drone's motors.
+    \item \(\mathbf{F}_{\text{gravity}}\) represents the gravitational force acting on the drone.
+    \item \(\mathbf{F}_{\text{external}}\) represents any external forces, such as wind or drag.
+\end{itemize}
+
+\section{Rotational Motion}
+Rotational dynamics describe how the drone's orientation changes over time due to the torques applied by its motors. These dynamics are described using Euler’s rotational equations:
+\begin{itemize}
+    \item \(\mathbf{I}\) is the inertia matrix of the drone.
+    \item \(\boldsymbol{\omega} = [p, q, r]^\text{T}\) is the angular velocity vector in the body frame.
+    \item \(\boldsymbol{\tau} = [\tau_{\phi}, \tau_{\theta}, \tau_{\psi}]^\text{T}\) is the vector of torques around the x, y, and z axes (roll, pitch, and yaw).
+\end{itemize}
+
+
+\section{Degrees Of Freedom (DOF)}
+The 6 Degrees of Freedom refer to the two types of movement that an object can exert on itself, translational and rotational. 
+These can be described as six independent motions that a drone can undergo:
+\begin{itemize}
+    \item Translation along the x-axis (forward/backward motion).
+    \item Translation along the y-axis (left/right motion).
+    \item Translation along the z-axis (upward/downward motion).
+    \item Rotation around the x-axis (roll).
+    \item Rotation around the y-axis (pitch).
+    \item Rotation around the z-axis (yaw).
+\end{itemize}
+
+\subsection{Equations of Motion}
+
+\subsubsection{Translational Motion:}
+\begin{align*}
+\ddot{x} &= \frac{F_T}{m} (\cos{\phi} \sin{\theta} \cos{\psi} + \sin{\phi} \sin{\psi}) \\
+\ddot{y} &= \frac{F_T}{m} (\cos{\phi} \sin{\theta} \sin{\psi} - \sin{\phi} \cos{\psi}) \\
+\ddot{z} &= \frac{F_T}{m} (\cos{\phi} \cos{\theta}) - g
+\end{align*}
+Where \(\mathbf{F}_{\text{T}}\) is the total thrust generated by the motors, and \(\mathbf{g}\) is the gravitational constant.
+
+\subsubsection{Rotational Motion:}
+\begin{align*}
+\tau_x &= I_x \dot{p} + (I_z - I_y) qr + I_{xz}(q^2 - r^2) \\
+\tau_y &= I_y \dot{q} + (I_x - I_z) rp + I_{xz}(r^2 - p^2) \\
+\tau_z &= I_z \dot{r} + (I_y - I_x) pq + I_{xz}(p^2 - q^2)
+\end{align*}
+
+\section{Thrust and Motor Dynamics}
+In the case of quadcopters, the thrust generated by each motor plays a critical role in controlling both the translational and rotational dynamics. By adjusting the speed of each motor, the drone can achieve different maneuvers:
+
+\begin{itemize}
+    \item \textbf{Roll} is controlled by changing the thrust between the left and right motors.
+    \item \textbf{Pitch} is controlled by changing the thrust between the front and rear motors.
+    \item \textbf{Yaw} is controlled by the differential torque produced by motors rotating in opposite directions (due to conservation of angular momentum).
+\end{itemize}
+
+Each motor's thrust can be modeled as a function of its rotational speed:
 
 \[
-    R(\phi, \theta, \psi) = R_z(\psi)R_y(\theta)R_x(\phi)
+F_T = k_T \cdot \omega^2
 \]
 
 Where:
+\begin{itemize}
+    \item $F_T$ is the thrust generated by the motor.
+    \item $k_T$ is a thrust constant that depends on the motor and propeller characteristics.
+    \item $\omega$ is the angular speed of the motor.
+\end{itemize}
+
+
+\section{Coordinate Systems}
+For any type of Autonomous vehicle a coordinate system is needed.
+This so the vehicle can calculate the current position and where to go next.
+The most commonly used for drones is the two reference frame is used for drones.
+\begin{itemize}
+    \item Inertial Frame (Earth Frame): This is a fixed, world-based reference frame used to describe the absolute position and orientation of the drone.
+    \item Body Frame: This is a frame fixed to the drone, with the origin at the drone’s center of mass. Movements and rotations are described relative to this body frame.
+\end{itemize}
+
+\section{Euler Angles}
+Euler angles are crucial in describing the orientation of the quadcopter in 3D space.
+These angles (yaw, pitch, roll) represent the rotation in the axes of a coordinated system, transforming the orientation of the drone from the body frame to the inertial frame.
+In this system:
+\begin{itemize}
+    \item The X-axis points forward (toward the nose of the vehicle).
+    \item The Y-axis points to the right (toward the starboard side).
+    \item The Z-axis points downward (toward the keel of the vehicle).
+\end{itemize}
+
+In aeronautics, the NED (North-East-Down) system is commonly used to describe orientation relative to the vehicle. 
+The rotational velocity of the vehicle is described by the rates of change around these axes, denoted as \(p\), \(q\), and \(r\). 
+Using this velocities of the vehicle we can calculate the orientation of the vehicle employing the Euler’s angles. These can be given by the following equations:
 \[
     R_z(\psi) = \begin{bmatrix}
         \cos \psi & -\sin \psi & 0 \\
@@ -77,81 +158,32 @@ Where:
     \end{bmatrix}
 \]
 
-\section{Translational Dynamics}
-The translational dynamics describe how the quadrotor moves along the x, y, and z axes. These dynamics depend on the thrust generated by the rotors and the orientation of the quadrotor.
+The orientation of the local system relative to the global system is described by the Euler angles: roll (\(\phi\)), pitch (\(\theta\)), and yaw (\(\psi\)).
 
-\subsection{3 DOF Translational Dynamics}
-In the 3 DOF model, the translational dynamics only consider movement in the \(x\) and \(y\) directions, assuming a constant altitude \(z\). The equations are:
+The kinematic equations for the Euler angles describe how the angular velocities p, q, and r (around the X, Y, and Z axes, respectively) relate to the rates of change of the Euler angles:
+\begin{equation}
+    \begin{bmatrix}
+    \dot{\phi} \\
+    \dot{\theta} \\
+    \dot{\psi}
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+    1 & \sin(\phi) \tan(\theta) & \cos(\phi) \tan(\theta) \\
+    0 & \cos(\phi) & -\sin(\phi) \\
+    0 & \sin(\phi)/\cos(\theta) & \cos(\phi)/\cos(\theta)
+    \end{bmatrix}
+    \begin{bmatrix}
+    p \\
+    q \\
+    r
+    \end{bmatrix}
+\end{equation}
+    
+These relationships are vital in understanding how the drone's orientation evolves over time under the influence of various torques applied by the rotors.
 
-\[
-    \ddot{x} = \frac{F_t}{m} \sin(\theta)
-\]
-\[
-    \ddot{y} = \frac{F_t}{m} \sin(\phi)
-\]
-
-Here, the pitch angle \(\theta\) influences the motion in the \(x\)-direction, and the roll angle \(\phi\) influences the motion in the \(y\)-direction.
-
-\subsection{6 DOF Translational Dynamics}
-In the 6 DOF model, the translational dynamics include movement in all three spatial dimensions (\(x\), \(y\), and \(z\)). The full equations consider the effects of pitch, roll, and yaw on the drone's movement:
-
-\[
-    \ddot{x} = \frac{F_t}{m} (\cos\phi \sin\theta \cos\psi + \sin\phi \sin\psi)
-\]
-\[
-    \ddot{y} = \frac{F_t}{m} (\cos\phi \sin\theta \sin\psi - \sin\phi \cos\psi)
-\]
-\[
-    \ddot{z} = \frac{F_t}{m} (\cos\phi \cos\theta) - g
-\]
-
-In the 6 DOF model, the pitch \(\theta\) and roll \(\phi\) angles still influence the motion in the \(x\) and \(y\) directions, but now these are coupled with the yaw angle \(\psi\), and the \(z\)-axis dynamics are explicitly considered.
-
-\section{Rotational Dynamics}
-The rotational dynamics describe how the quadrotor rotates around the x, y, and z axes. These dynamics depend on the torques generated by the rotors.
-
-\subsection{3 DOF Rotational Dynamics}
-The 3 DOF model simplifies the rotational dynamics by only considering rotation around the \(z\)-axis (yaw). The dynamics are given by:
-
-\[
-    \tau_z = I_z \ddot{\psi}
-\]
-
-Here, the yaw torque \(\tau_z\) is the only rotational dynamic considered, ignoring roll and pitch.
-
-\subsection{6 DOF Rotational Dynamics}
-The 6 DOF model incorporates full rotational dynamics, including roll (\(\phi\)), pitch (\(\theta\)), and yaw (\(\psi\)). The equations are:
-
-\[
-    \tau_x = I_x \dot{p} + (I_z - I_y) qr + I_{xz} (q^2 - r^2)
-\]
-\[
-    \tau_y = I_y \dot{q} + (I_x - I_z) rp + I_{xz} (r^2 - p^2)
-\]
-\[
-    \tau_z = I_z \dot{r} + (I_y - I_x) pq + I_{xz} (p^2 - q^2)
-\]
-
-These equations describe how torques around all three axes are influenced by the angular velocities and the moments of inertia.
-
-\section{Linking 3 DOF and 6 DOF Dynamics}
-The 3 DOF model is a simplified version of the 6 DOF model, where certain dynamics are ignored or assumed constant to reduce complexity.
-
-\subsection{Translational Dynamics}
-The 3 DOF translational dynamics are a subset of the 6 DOF translational dynamics, with:
-\begin{itemize}
-    \item The \(z\)-axis dynamics ignored (constant altitude assumption).
-    \item The \(x\) and \(y\) dynamics simplified by assuming no coupling with the yaw angle \(\psi\).
-\end{itemize}
-
-\subsection{Rotational Dynamics}
-The 3 DOF rotational dynamics are a special case of the 6 DOF rotational dynamics, where:
-\begin{itemize}
-    \item Only yaw (\(\psi\)) rotation is considered, while roll (\(\phi\)) and pitch (\(\theta\)) are assumed to be either zero or constant.
-\end{itemize}
-
-In summary, the 3 DOF model can be seen as a subset or simplification of the 6 DOF model, where certain dynamics are ignored or assumed constant to reduce complexity. When moving from 3 DOF to 6 DOF, you add more degrees of freedom, which results in more complex interactions between the forces and torques acting on the drone.
-
+In practical control systems, such as those implemented with PID controllers, Euler angles are used to stabilize and control the drone's orientation. 
+The controller adjusts the motor speeds to correct deviations from desired roll, pitch, and yaw angles, ensuring that the drone maintains its intended orientation.
 \chapter{State-Space Representation}
 
 \section{3 DOF State-Space Representation}
@@ -188,12 +220,15 @@ Where:
 
 Again, the matrices \(A\), \(B\), \(C\), and \(D\) are derived from the equations of motion, accounting for all six degrees of freedom.
 
-\chapter{Conclusion}
+\chapter{Control Strategies}
 
-\section{Summary}
-This document has presented a comprehensive analysis of the quadrotor's dynamics in both 3DOF and 6 DOF models. The 3 DOF model provides a simplified view of the quadrotor's motion, focusing on horizontal movements and yaw rotation, while the 6 DOF model captures the full complexity of the quadrotor's dynamics, including vertical motion, roll, and pitch.
+Various control strategies can be applied to stabilize and control drones modeled using 6 DOF:
 
-\section{Future Work}
-Further work could include extending the analysis to consider aerodynamic effects, incorporating sensor models (such as IMUs) into the simulation, and validating the control strategies in real-world experiments. Additionally, exploring advanced control strategies such as adaptive or robust control could provide better performance in the presence of uncertainties or disturbances.
+\begin{itemize}
+    \item \textbf{PID Control}: Simple but effective for basic stabilization and trajectory following.
+    \item \textbf{Linear Quadratic Regulator (LQR)}: A more advanced method that optimizes the control inputs by minimizing a cost function.
+    \item \textbf{Model Predictive Control (MPC)}: Predicts the future states of the system and optimizes control actions over a finite horizon.
+    \item \textbf{Adaptive Control}: Adjusts the control parameters in real time to compensate for system uncertainties or disturbances.
+\end{itemize}
 
 \end{document}

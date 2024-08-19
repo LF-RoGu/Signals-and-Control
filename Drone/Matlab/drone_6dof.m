@@ -65,7 +65,7 @@ waypointsA = [0,     0,      10;
              35,    30,     16; 
              -40,   35,     14; 
              45,    40,     12;
-             0,     0,      0];  % Final waypoint returns to origin
+             0,     0,      10];  % Final waypoint returns to origin
 
 %           [x,     y,      z]
 waypointsB = [0,     0,      10; 
@@ -78,9 +78,29 @@ waypointsB = [0,     0,      10;
              35,    30,     16; 
              40,    35,     14; 
              45,    40,     12;
-             0,     0,      0];  % Final waypoint returns to origin
+             0,     0,      10];  % Final waypoint returns to origin
 
-waypoints = waypointsA;
+% Define the parameters for the sine wave
+amplitude = 10;  % Amplitude of the sine wave in meters
+wavelength = 40; % Wavelength of the sine wave in meters
+altitude_variation = 10; % Variation in altitude
+
+% Number of waypoints
+num_waypoints = 100;
+
+% Initialize the waypoints array
+waypointsC = zeros(num_waypoints, 3);
+
+% Generate the waypoints
+for i = 1:num_waypoints
+    x = (i-1) * wavelength / (num_waypoints-1);
+    y = amplitude * sin(2 * pi * x / wavelength);
+    z = 10 + altitude_variation * sin(2 * pi * x / (2*wavelength)); % Base altitude of 10 meters with variation
+    waypointsC(i, :) = [x, y, z];
+end
+waypointsC(num_waypoints, :) = [0,0,10];
+
+waypoints = waypointsC;
 
 current_waypoint = 1;
 tolerance = 0.5; % Distance tolerance to consider waypoint reached
